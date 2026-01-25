@@ -1,7 +1,7 @@
-const stripe = require('../config/stripe');
-const Order = require('../models/Order');
-const User = require('../models/User');
-const asyncHandler = require('../middleware/async');
+const stripe = require('../config/stripe.js');
+const Order = require('../models/Order.js');
+const User = require('../models/User.js');
+const asyncHandler = require('../middleware/async.js');
 
 // @desc      Create Payment Intent
 // @route     POST /api/payments/create-payment-intent
@@ -12,11 +12,17 @@ exports.createPaymentIntent = asyncHandler(async (req, res, next) => {
     const order = await Order.findById(orderId);
 
     if (!order) {
-        return next({ statusCode: 404, message: 'Order not found' });
+        return next({
+            statusCode: 404,
+            message: 'Order not found'
+        });
     }
 
     if (order.status === 'paid') {
-        return next({ statusCode: 400, message: 'Order already paid' });
+        return next({
+            statusCode: 400,
+            message: 'Order already paid'
+        });
     }
 
     const user = await User.findById(req.user.id);

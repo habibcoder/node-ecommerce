@@ -1,9 +1,9 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const asyncHandler = require('./async');
+const User = require('../models/User.js');
+const asyncHandler = require('./async.js');
 
 // Protect routes
-exports.protect = async (req, res, next) => {
+exports.protect = asyncHandler(async (req, res, next) => {
     let token;
 
     if (
@@ -28,6 +28,13 @@ exports.protect = async (req, res, next) => {
 
         req.user = await User.findById(decoded.id);
 
+        if (!req.user) {
+            return next({
+                statusCode: 401,
+                message: 'Not authorized to access this route'
+            });
+        }
+
         if (!req.user.isVerified) {
             return next({
                 statusCode: 401,
@@ -50,7 +57,7 @@ exports.protect = async (req, res, next) => {
             message: 'Not authorized to access this route'
         });
     }
-};
+});
 
 // Grant access to specific roles
 exports.authorize = (...roles) => {
@@ -64,14 +71,3 @@ exports.authorize = (...roles) => {
         next();
     };
 };
-
-// Check if user is verified
-exports.verified = asyncHandler(async (req, res, next) => {
-    if (!req.user.isVerified) {
-        return next({
-            statusCode: 403,
-            message: 'Please verify your email first'
-        });
-    }
-    next();
-});

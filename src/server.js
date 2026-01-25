@@ -16,14 +16,14 @@ connectDB();
 const app = express();
 
 // Route files
-const authV1 = require('./routes/v1/auth');
-const authV2 = require('./routes/v2/auth');
+const authV1 = require('./routes/v1/auth.js');
+const authV2 = require('./routes/v2/auth.js');
 
-const products = require('./routes/products');
-const cart = require('./routes/cart');
-const orders = require('./routes/orders');
-const paymentController = require('./controllers/paymentController');
-const paymentRoutes = require('./routes/payments'); // Note: we will use this for non-webhook routes if we split, but currently it has both.
+const products = require('./routes/products.js');
+const cart = require('./routes/cart.js');
+const orders = require('./routes/orders.js');
+const paymentController = require('./controllers/paymentController.js');
+const paymentRoutes = require('./routes/payments.js'); // Note: we will use this for non-webhook routes if we split, but currently it has both.
 
 // Middleware
 

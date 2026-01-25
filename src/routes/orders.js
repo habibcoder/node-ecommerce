@@ -4,8 +4,8 @@ const {
     getOrders,
     getOrder,
     updateOrderStatus,
-} = require('../controllers/orderController');
-const { protect, authorize } = require('../middleware/auth');
+} = require('../controllers/orderController.js');
+const { protect, authorize } = require('../middleware/auth.js');
 
 const router = express.Router();
 

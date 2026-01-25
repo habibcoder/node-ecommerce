@@ -1,6 +1,6 @@
-const User = require('../../models/User');
-const asyncHandler = require('../../middleware/async');
-const stripe = require('../../config/stripe');
+const User = require('../../models/User.js');
+const asyncHandler = require('../../middleware/async.js');
+const stripe = require('../../config/stripe.js');
 
 // @desc      Register user
 // @route     POST /api/auth/register

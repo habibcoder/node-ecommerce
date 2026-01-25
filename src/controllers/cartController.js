@@ -1,6 +1,6 @@
-const Cart = require('../models/Cart');
-const Product = require('../models/Product');
-const asyncHandler = require('../middleware/async');
+const Cart = require('../models/Cart.js');
+const Product = require('../models/Product.js');
+const asyncHandler = require('../middleware/async.js');
 
 // @desc      Get user cart
 // @route     GET /api/cart
@@ -38,7 +38,10 @@ exports.addItemToCart = asyncHandler(async (req, res, next) => {
 
     const product = await Product.findById(productId);
     if (!product) {
-        return next({ statusCode: 404, message: 'Product not found' });
+        return next({
+            statusCode: 404,
+            message: 'Product not found'
+        });
     }
 
     // Check if product already in cart
@@ -75,7 +78,10 @@ exports.removeItemFromCart = asyncHandler(async (req, res, next) => {
     let cart = await Cart.findOne({ user: req.user.id });
 
     if (!cart) {
-        return next({ statusCode: 404, message: 'Cart not found' });
+        return next({
+            statusCode: 404,
+            message: 'Cart not found'
+        });
     }
 
     // Filter out item by ItemId OR ProductId

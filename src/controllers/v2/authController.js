@@ -1,8 +1,8 @@
 const crypto = require('crypto');
-const User = require('../../models/User');
-const asyncHandler = require('../../middleware/async');
-const stripe = require('../../config/stripe');
-const sendEmail = require('../../utils/sendEmail');
+const User = require('../../models/User.js');
+const asyncHandler = require('../../middleware/async.js');
+const stripe = require('../../config/stripe.js');
+const sendEmail = require('../../utils/sendEmail.js');
 
 // @desc      Register user (v2) - emails verification token
 // @route     POST /api/v2/auth/register

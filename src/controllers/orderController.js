@@ -1,6 +1,6 @@
-const Order = require('../models/Order');
-const Cart = require('../models/Cart');
-const asyncHandler = require('../middleware/async');
+const Order = require('../models/Order.js');
+const Cart = require('../models/Cart.js');
+const asyncHandler = require('../middleware/async.js');
 
 // @desc      Create new order
 // @route     POST /api/orders
@@ -12,7 +12,10 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     const cart = await Cart.findOne({ user: req.user.id });
 
     if (!cart || cart.items.length === 0) {
-        return next({ statusCode: 400, message: 'Cart is empty' });
+        return next({
+            statusCode: 400,
+            message: 'Cart is empty'
+        });
     }
 
     // Calculate total
@@ -55,12 +58,18 @@ exports.getOrder = asyncHandler(async (req, res, next) => {
     const order = await Order.findById(req.params.id).populate('user', 'name email');
 
     if (!order) {
-        return next({ statusCode: 404, message: 'Order not found' });
+        return next({
+            statusCode: 404,
+            message: 'Order not found'
+        });
     }
 
     // Make sure user is order owner or admin
     if (order.user._id.toString() !== req.user.id && req.user.role !== 'admin') {
-        return next({ statusCode: 401, message: 'Not authorized to view this order' });
+        return next({
+            statusCode: 401,
+            message: 'Not authorized to view this order'
+        });
     }
 
     res.status(200).json({
@@ -78,7 +87,10 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true, runValidators: true });
 
     if (!order) {
-        return next({ statusCode: 404, message: 'Order not found' });
+        return next({
+            statusCode: 404,
+            message: 'Order not found'
+        });
     }
 
     res.status(200).json({

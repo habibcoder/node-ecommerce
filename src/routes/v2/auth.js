@@ -8,9 +8,9 @@ const {
     resetPassword,
     validateResetToken,
     logout
-} = require('../../controllers/v2/authController');
-const { protect } = require('../../middleware/auth');
-const { authLimiter } = require('../../middleware/rateLimiter');
+} = require('../../controllers/v2/authController.js');
+const { protect } = require('../../middleware/auth.js');
+const { authLimiter } = require('../../middleware/rateLimiter.js');
 
 const router = express.Router();
 

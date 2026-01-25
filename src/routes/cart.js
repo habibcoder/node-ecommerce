@@ -3,8 +3,8 @@ const {
     getCart,
     addItemToCart,
     removeItemFromCart,
-} = require('../controllers/cartController');
-const { protect } = require('../middleware/auth');
+} = require('../controllers/cartController.js');
+const { protect } = require('../middleware/auth.js');
 
 const router = express.Router();
 
