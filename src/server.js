@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const connectDB = require('./config/db.js');
 const errorHandler = require('./middleware/error.js');
-const { globalLimiter, authLimiter } = require('./middleware/rateLimiter.js');
+const { globalLimiter, authLimiter, webhookLimiter } = require('./middleware/rateLimiter.js');
 const { preventNoSQLInjection, preventXSS } = require('./middleware/sanitize.js');
 
 // Load env vars
@@ -50,6 +50,7 @@ if (process.env.NODE_ENV === 'development') {
 // We use express.raw() to get the buffer for signature verification
 app.post(
     '/api/payments/webhook',
+    webhookLimiter,
     express.raw({ type: 'application/json' }),
     paymentController.stripeWebhook
 );

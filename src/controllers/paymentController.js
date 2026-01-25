@@ -94,28 +94,45 @@ exports.createPaymentIntent = asyncHandler(async (req, res, next) => {
 // @access    Public
 exports.stripeWebhook = async (req, res) => {
     let event;
+    const sig = req.headers['stripe-signature'];
 
-    if (process.env.NODE_ENV !== 'production') {
-        // Accept curl payload directly in dev
-        try {
-            event = JSON.parse(req.body.toString());
-        } catch (err) {
-            console.error(`Webhook Error: ${err.message}`);
-            return res.status(400).send(`Webhook Error: ${err.message}`);
-        }
-    } else {
-        const sig = req.headers['stripe-signature'];
-        try {
-            event = stripe.webhooks.constructEvent(
-                req.body,
-                sig,
-                process.env.STRIPE_WEBHOOK_SECRET
-            );
-        } catch (err) {
-            console.error(`Webhook Error: ${err.message}`);
-            return res.status(400).send(`Webhook Error: ${err.message}`);
-        }
+    // Always verify webhook signature for security
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+        console.error('WEBHOOK ERROR: STRIPE_WEBHOOK_SECRET environment variable is not set');
+        return res.status(500).send('Webhook configuration error');
     }
+
+    if (!sig) {
+        console.error('WEBHOOK ERROR: Missing Stripe signature header');
+        return res.status(400).send('Missing Stripe signature');
+    }
+
+    try {
+        // Verify webhook signature in all environments
+        event = stripe.webhooks.constructEvent(
+            req.body,
+            sig,
+            process.env.STRIPE_WEBHOOK_SECRET
+        );
+        
+        console.log(`Webhook verified: ${event.type} (${event.id})`);
+    } catch (err) {
+        console.error(`Webhook signature verification failed: ${err.message}`);
+        
+        // Log additional details for debugging (but not the actual signature for security)
+        console.error(`Webhook debug info: Event type attempted: ${req.body?.type || 'unknown'}`);
+        
+        return res.status(400).send(`Webhook signature verification failed: ${err.message}`);
+    }
+
+    // Additional webhook security validations
+    if (!event || !event.type || !event.data || !event.id) {
+        console.error('WEBHOOK ERROR: Invalid event structure received');
+        return res.status(400).send('Invalid webhook event structure');
+    }
+
+    // Log webhook event for monitoring (without sensitive data)
+    console.log(`Processing webhook: ${event.type} (ID: ${event.id})`);
 
     // Event handling logic with enhanced security checks
     switch (event.type) {
