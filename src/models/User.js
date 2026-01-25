@@ -30,6 +30,7 @@ const UserSchema = new mongoose.Schema({
     },
     stripeCustomerId: {
         type: String,
+        select: false,
     },
     resetPasswordToken: {
         type: String,
@@ -55,7 +56,10 @@ const UserSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
-    passwordChangedAt: Date,
+    passwordChangedAt: {
+        type: Date,
+        select: false,
+    },
 });
 
 // Encrypt password before saving

@@ -25,7 +25,7 @@ exports.createPaymentIntent = asyncHandler(async (req, res, next) => {
         });
     }
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select('+stripeCustomerId');
 
     // Create params
     const params = {
@@ -109,7 +109,7 @@ exports.stripeWebhook = async (req, res) => {
 // @route     POST /api/payments/setup-intent
 // @access    Private
 exports.createSetupIntent = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select('+stripeCustomerId');
 
     // Create a SetupIntent
     const setupIntent = await stripe.setupIntents.create({

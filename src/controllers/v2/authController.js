@@ -243,7 +243,7 @@ exports.resetPassword = asyncHandler(async (req, res, next) => {
 // @route     GET /api/v2/auth/me
 // @access    Private
 exports.getMe = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select('-stripeCustomerId -passwordChangedAt');
 
     res.status(200).json({
         success: true,
@@ -282,11 +282,21 @@ const sendTokenResponse = (user, statusCode, res) => {
         options.secure = true;
     }
 
+    // Remove sensitive data from user object
+    const userResponse = {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt
+    };
+
     res
         .status(statusCode)
         .json({
             success: true,
             token,
-            user
+            user: userResponse
         });
 };
