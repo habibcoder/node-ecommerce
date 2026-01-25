@@ -18,10 +18,42 @@ exports.createPaymentIntent = asyncHandler(async (req, res, next) => {
         });
     }
 
+    // CRITICAL: Check if the order belongs to the authenticated user
+    if (order.user.toString() !== req.user.id) {
+        // Log potential security threat
+        console.warn(`SECURITY ALERT: User ${req.user.id} (${req.user.email || 'unknown'}) attempted to create payment for order ${orderId} owned by ${order.user}`);
+        return next({
+            statusCode: 403,
+            message: 'Not authorized to create payment for this order'
+        });
+    }
+
     if (order.status === 'paid') {
         return next({
             statusCode: 400,
             message: 'Order already paid'
+        });
+    }
+
+    // Additional security checks
+    if (order.status === 'cancelled') {
+        return next({
+            statusCode: 400,
+            message: 'Cannot create payment for cancelled order'
+        });
+    }
+
+    if (!order.items || order.items.length === 0) {
+        return next({
+            statusCode: 400,
+            message: 'Cannot create payment for order with no items'
+        });
+    }
+
+    if (order.totalAmount <= 0) {
+        return next({
+            statusCode: 400,
+            message: 'Cannot create payment for order with invalid amount'
         });
     }
 
@@ -46,6 +78,9 @@ exports.createPaymentIntent = asyncHandler(async (req, res, next) => {
     // Save payment intent ID to order
     order.paymentIntentId = paymentIntent.id;
     await order.save();
+
+    // Log successful payment intent creation
+    console.log(`Payment intent created: ${paymentIntent.id} for order ${orderId} by user ${req.user.id} (amount: $${order.totalAmount})`);
 
     res.status(200).json({
         success: true,
@@ -82,22 +117,58 @@ exports.stripeWebhook = async (req, res) => {
         }
     }
 
-    // Event handling logic stays the same
+    // Event handling logic with enhanced security checks
     switch (event.type) {
         case 'payment_intent.succeeded':
             const paymentIntent = event.data.object;
             const orderId = paymentIntent.metadata.orderId;
-            if (orderId) await Order.findByIdAndUpdate(orderId, { status: 'paid' });
-            console.log('PaymentIntent succeeded:', paymentIntent.id);
+            const userId = paymentIntent.metadata.userId;
+            
+            if (orderId && userId) {
+                // Verify the order exists and belongs to the user in metadata
+                const order = await Order.findById(orderId);
+                if (order && order.user.toString() === userId) {
+                    await Order.findByIdAndUpdate(orderId, { 
+                        status: 'paid',
+                        paymentIntentId: paymentIntent.id 
+                    });
+                    console.log(`PaymentIntent succeeded: ${paymentIntent.id} for order: ${orderId}`);
+                } else {
+                    console.error(`Invalid payment attempt: Order ${orderId} not found or user mismatch`);
+                }
+            } else {
+                console.error(`PaymentIntent ${paymentIntent.id} missing required metadata`);
+            }
             break;
+            
         case 'payment_intent.payment_failed':
-            console.log('Payment failed:', event.data.object.id);
+            const failedPayment = event.data.object;
+            console.log(`Payment failed: ${failedPayment.id}`);
+            // Optionally update order status to failed
+            if (failedPayment.metadata.orderId) {
+                await Order.findByIdAndUpdate(failedPayment.metadata.orderId, { 
+                    status: 'pending' // Reset to pending for retry
+                });
+            }
             break;
+            
         case 'payment_intent.canceled':
-            const canceledOrderId = event.data.object.metadata.orderId;
-            if (canceledOrderId) await Order.findByIdAndUpdate(canceledOrderId, { status: 'cancelled' });
-            console.log('Payment canceled:', event.data.object.id);
+            const canceledPayment = event.data.object;
+            const canceledOrderId = canceledPayment.metadata.orderId;
+            const canceledUserId = canceledPayment.metadata.userId;
+            
+            if (canceledOrderId && canceledUserId) {
+                // Verify the order exists and belongs to the user
+                const order = await Order.findById(canceledOrderId);
+                if (order && order.user.toString() === canceledUserId) {
+                    await Order.findByIdAndUpdate(canceledOrderId, { status: 'cancelled' });
+                    console.log(`Payment canceled: ${canceledPayment.id} for order: ${canceledOrderId}`);
+                } else {
+                    console.error(`Invalid cancellation attempt: Order ${canceledOrderId} not found or user mismatch`);
+                }
+            }
             break;
+            
         default:
             console.log(`Unhandled event type ${event.type}`);
     }
