@@ -6,19 +6,24 @@ const {
     updateOrderStatus,
 } = require('../controllers/orderController.js');
 const { protect, authorize } = require('../middleware/auth.js');
+const { 
+    validateCreateOrder, 
+    validateOrderId, 
+    validateUpdateOrderStatus 
+} = require('../middleware/validation.js');
 
 const router = express.Router();
 
 router.use(protect);
 
 router.route('/')
-    .post(createOrder)
+    .post(validateCreateOrder, createOrder)
     .get(getOrders);
 
 router.route('/:id')
-    .get(getOrder);
+    .get(validateOrderId, getOrder);
 
 router.route('/:id/status')
-    .put(authorize('admin'), updateOrderStatus);
+    .put(authorize('admin'), validateUpdateOrderStatus, updateOrderStatus);
 
 module.exports = router;

@@ -6,6 +6,7 @@ const cors = require('cors');
 const connectDB = require('./config/db.js');
 const errorHandler = require('./middleware/error.js');
 const { globalLimiter, authLimiter } = require('./middleware/rateLimiter.js');
+const { preventNoSQLInjection, preventXSS } = require('./middleware/sanitize.js');
 
 // Load env vars
 dotenv.config();
@@ -29,6 +30,10 @@ const paymentRoutes = require('./routes/payments.js'); // Note: we will use this
 
 // Helmet for security headers
 app.use(helmet());
+
+// Prevent NoSQL injection and XSS
+app.use(preventNoSQLInjection);
+app.use(preventXSS);
 
 // Rate Limiting
 app.use(globalLimiter);
