@@ -16,6 +16,17 @@ connectDB();
 
 const app = express();
 
+// Trust proxy - configured for security
+// In production, set this to your specific proxy/load balancer IP ranges
+if (process.env.NODE_ENV === 'production') {
+    // In production, configure this with your actual proxy IPs
+    // Example: app.set('trust proxy', ['127.0.0.1', '::1', '10.0.0.0/8']);
+    app.set('trust proxy', 1); // Trust first proxy only
+} else {
+    // Development: trust localhost IPs only
+    app.set('trust proxy', ['127.0.0.1', '::1']);
+}
+
 // Route files
 const authV1 = require('./routes/v1/auth.js');
 const authV2 = require('./routes/v2/auth.js');

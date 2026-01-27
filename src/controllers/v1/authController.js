@@ -5,26 +5,51 @@ const stripe = require('../../config/stripe.js');
 // @desc      Register user
 // @route     POST /api/auth/register
 // @access    Public
-exports.register = asyncHandler(async (req, res) => {
+exports.register = asyncHandler(async (req, res, next) => {
     const { name, email, password, role } = req.body;
 
-    // Create Stripe Customer
-    const customer = await stripe.customers.create({
-        email,
-        name,
-    });
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+        return next({
+            statusCode: 400,
+            message: `An account with email '${email}' already exists. Please use a different email or try logging in.`
+        });
+    }
 
-    // Create user
-    const user = await User.create({
-        name,
-        email,
-        password,
-        role,
-        stripeCustomerId: customer.id,
-        isVerified: true,
-    });
+    let customer;
+    try {
+        // Create Stripe Customer
+        customer = await stripe.customers.create({
+            email,
+            name,
+        });
 
-    sendTokenResponse(user, 200, res);
+        // Create user
+        const user = await User.create({
+            name,
+            email,
+            password,
+            role,
+            stripeCustomerId: customer.id,
+            isVerified: true,
+        });
+
+        sendTokenResponse(user, 200, res);
+    } catch (error) {
+        // If user creation fails but Stripe customer was created, clean up
+        if (customer && customer.id) {
+            try {
+                await stripe.customers.del(customer.id);
+                console.log(`Cleaned up Stripe customer ${customer.id} after failed user creation`);
+            } catch (cleanupError) {
+                console.error(`Failed to cleanup Stripe customer ${customer.id}:`, cleanupError.message);
+            }
+        }
+        
+        // Re-throw the original error
+        throw error;
+    }
 });
 
 // @desc      Login user

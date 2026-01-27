@@ -10,51 +10,76 @@ const sendEmail = require('../../utils/sendEmail.js');
 exports.register = asyncHandler(async (req, res, next) => {
     const { name, email, password, role } = req.body;
 
-    // Create Stripe Customer
-    const customer = await stripe.customers.create({
-        email,
-        name,
-    });
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+        return next({
+            statusCode: 400,
+            message: `An account with email '${email}' already exists. Please use a different email or try logging in.`
+        });
+    }
 
-    // Create user
-    const user = await User.create({
-        name,
-        email,
-        password,
-        role,
-        stripeCustomerId: customer.id,
-    });
-
-    // Create verification token
-    const verificationToken = user.getVerificationToken();
-    await user.save({ validateBeforeSave: false });
-
-    // Create verification URL
-    const verifyUrl = `${req.protocol}://${req.get('host')}/api/v2/auth/verifyemail/${verificationToken}`;
-
-    const message = `You are receiving this email because you (or someone else) has requested the creation of an account.\nPlease click on the below link to verify your email:\n\n${verifyUrl}`;
-
+    let customer;
     try {
-        await sendEmail({
-            email: user.email,
-            subject: 'Account Verification Token',
-            message,
+        // Create Stripe Customer
+        customer = await stripe.customers.create({
+            email,
+            name,
         });
 
-        res.status(200).json({
-            success: true,
-            data: 'Email sent',
+        // Create user
+        const user = await User.create({
+            name,
+            email,
+            password,
+            role,
+            stripeCustomerId: customer.id,
         });
-    } catch (err) {
-        console.log(err);
-        user.verificationToken = undefined;
-        user.verificationTokenExpire = undefined;
+
+        // Create verification token
+        const verificationToken = user.getVerificationToken();
         await user.save({ validateBeforeSave: false });
 
-        return next({
-            statusCode: 500,
-            message: 'Email could not be sent'
-        });
+        // Create verification URL
+        const verifyUrl = `${req.protocol}://${req.get('host')}/api/v2/auth/verifyemail/${verificationToken}`;
+
+        const message = `You are receiving this email because you (or someone else) has requested the creation of an account.\nPlease click on the below link to verify your email:\n\n${verifyUrl}`;
+
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Account Verification Token',
+                message,
+            });
+
+            res.status(200).json({
+                success: true,
+                data: 'Email sent',
+            });
+        } catch (emailError) {
+            console.log(emailError);
+            user.verificationToken = undefined;
+            user.verificationTokenExpire = undefined;
+            await user.save({ validateBeforeSave: false });
+
+            return next({
+                statusCode: 500,
+                message: 'Email could not be sent'
+            });
+        }
+    } catch (error) {
+        // If user creation fails but Stripe customer was created, clean up
+        if (customer && customer.id) {
+            try {
+                await stripe.customers.del(customer.id);
+                console.log(`Cleaned up Stripe customer ${customer.id} after failed user creation`);
+            } catch (cleanupError) {
+                console.error(`Failed to cleanup Stripe customer ${customer.id}:`, cleanupError.message);
+            }
+        }
+        
+        // Re-throw the original error
+        throw error;
     }
 });
 
