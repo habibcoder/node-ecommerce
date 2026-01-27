@@ -77,6 +77,7 @@ A e-commerce backend API with Stripe payment integration, RBAC authentication, p
 ### Cart
 - `GET /api/cart` - Get user cart
 - `POST /api/cart` - Add item to cart
+- `PUT /api/cart/:itemId` - Update quantity of existing cart items
 - `DELETE /api/cart/:itemId` - Remove item from cart
 
 ### Orders

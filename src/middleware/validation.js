@@ -235,6 +235,22 @@ const validateRemoveFromCart = [
     handleValidationErrors
 ];
 
+const validateUpdateCartItem = [
+    param('itemId')
+        .notEmpty()
+        .withMessage('Item ID is required')
+        .custom(isValidObjectId)
+        .withMessage('Invalid item ID format'),
+    
+    body('quantity')
+        .notEmpty()
+        .withMessage('Quantity is required')
+        .isInt({ min: 1, max: 50 })
+        .withMessage('Quantity must be a positive integer between 1 and 50'),
+    
+    handleValidationErrors
+];
+
 // Order Validation Rules
 const validateCreateOrder = [
     body('shippingAddress')
@@ -357,6 +373,7 @@ module.exports = {
     // Cart validations
     validateAddToCart,
     validateRemoveFromCart,
+    validateUpdateCartItem,
     
     // Order validations
     validateCreateOrder,

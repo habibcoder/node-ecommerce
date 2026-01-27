@@ -2,10 +2,11 @@ const express = require('express');
 const {
     getCart,
     addItemToCart,
+    updateCartItem,
     removeItemFromCart,
 } = require('../controllers/cartController.js');
 const { protect } = require('../middleware/auth.js');
-const { validateAddToCart, validateRemoveFromCart } = require('../middleware/validation.js');
+const { validateAddToCart, validateUpdateCartItem, validateRemoveFromCart } = require('../middleware/validation.js');
 
 const router = express.Router();
 
@@ -16,6 +17,7 @@ router.route('/')
     .post(validateAddToCart, addItemToCart);
 
 router.route('/:itemId')
+    .put(validateUpdateCartItem, updateCartItem)
     .delete(validateRemoveFromCart, removeItemFromCart);
 
 module.exports = router;
