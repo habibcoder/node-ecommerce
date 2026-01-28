@@ -11,12 +11,12 @@ const {
 } = require('../../controllers/v2/authController.js');
 const { protect } = require('../../middleware/auth.js');
 const { authLimiter } = require('../../middleware/rateLimiter.js');
-const { 
-    validateRegister, 
-    validateLogin, 
-    validateForgotPassword, 
+const {
+    validateRegister,
+    validateLogin,
+    validateForgotPassword,
     validateResetPassword,
-    validateVerifyEmailToken 
+    validateVerifyEmailToken
 } = require('../../middleware/validation.js');
 
 const router = express.Router();
@@ -27,7 +27,7 @@ router.get('/logout', logout);
 router.get('/me', protect, getMe);
 router.get('/verifyemail/:token', validateVerifyEmailToken, verifyEmail);
 router.post('/forgotpassword', validateForgotPassword, forgotPassword);
-router.get('/resetpassword/:token', validateResetPassword, validateResetToken);
+router.get('/resetpassword/:token', validateVerifyEmailToken, validateResetToken);
 router.put('/resetpassword/:token', validateResetPassword, resetPassword);
 
 module.exports = router;
