@@ -36,7 +36,17 @@ exports.getProduct = asyncHandler(async (req, res, next) => {
 // @desc      Create new product
 // @route     POST /api/products
 // @access    Private (Admin)
-exports.createProduct = asyncHandler(async (req, res) => {
+exports.createProduct = asyncHandler(async (req, res, next) => {
+    // Check if product with name already exists
+    const productExists = await Product.findOne({ name: req.body.name });
+
+    if (productExists) {
+        return next({
+            statusCode: 400,
+            message: 'Product with this name already exists'
+        });
+    }
+
     const product = await Product.create(req.body);
 
     res.status(201).json({
