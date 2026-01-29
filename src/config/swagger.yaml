@@ -1,0 +1,1208 @@
+openapi: 3.1.0
+info:
+  title: E-Commerce REST API Platform
+  description: Backend e-commerce API with Stripe payment integration, JWT authentication, and admin dashboard
+  version: 1.0.0
+  contact:
+    name: Habib
+    url: https://github.com/habibcoder/node-ecommerce
+    email: mdhabibhrs66@gmail.com
+
+servers:
+  - url: http://localhost:5000
+    description: Development Server
+  - url: https://api.example.com
+    description: Production Server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+
+  schemas:
+    # User Schema
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: MongoDB ObjectId
+        name:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        role:
+          type: string
+          enum: [user, admin]
+          default: user
+        isVerified:
+          type: boolean
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, email, role]
+
+    # Product Schema
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          example: Wireless Headphones
+        description:
+          type: string
+          example: High-quality wireless headphones with noise cancellation
+        price:
+          type: number
+          format: float
+          example: 99.99
+        category:
+          type: string
+          example: Electronics
+        stock:
+          type: integer
+          example: 50
+        imageUrl:
+          type: string
+          format: uri
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, price, stock]
+
+    # Cart Item Schema
+    CartItem:
+      type: object
+      properties:
+        product:
+          type: string
+          description: Product MongoDB ObjectId
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+        price:
+          type: number
+          format: float
+      required: [product, quantity]
+
+    # Cart Schema
+    Cart:
+      type: object
+      properties:
+        id:
+          type: string
+        user:
+          type: string
+          description: User MongoDB ObjectId
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        totalAmount:
+          type: number
+          format: float
+          example: 199.98
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, user, items]
+
+    # Order Schema
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        user:
+          type: string
+          description: User MongoDB ObjectId
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              product:
+                type: string
+              name:
+                type: string
+              quantity:
+                type: integer
+              price:
+                type: number
+        totalAmount:
+          type: number
+          format: float
+          example: 299.97
+        paymentIntentId:
+          type: string
+          description: Stripe Payment Intent ID
+        status:
+          type: string
+          enum: [pending, paid, shipped, cancelled]
+          default: pending
+        shippingAddress:
+          type: object
+          properties:
+            line1:
+              type: string
+              example: 123 Main St
+            city:
+              type: string
+              example: New York
+            postal_code:
+              type: string
+              example: "10001"
+            country:
+              type: string
+              example: USA
+          required: [line1, city, postal_code, country]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, user, items, totalAmount, status, shippingAddress]
+
+    # Payment Intent Schema
+    PaymentIntent:
+      type: object
+      properties:
+        clientSecret:
+          type: string
+          description: Stripe client secret for frontend
+        id:
+          type: string
+          description: Stripe Payment Intent ID
+        amount:
+          type: integer
+          example: 9999
+        currency:
+          type: string
+          example: usd
+        status:
+          type: string
+          enum: [requires_payment_method, processing, succeeded]
+      required: [clientSecret, id]
+
+    # Setup Intent Schema
+    SetupIntent:
+      type: object
+      properties:
+        clientSecret:
+          type: string
+          description: Stripe client secret for saving card
+        id:
+          type: string
+          description: Stripe Setup Intent ID
+      required: [clientSecret, id]
+
+    # API Response Schema
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          description: Response data
+        message:
+          type: string
+          description: Success message
+      required: [success]
+
+    # Error Response Schema
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Unauthorized access
+        statusCode:
+          type: integer
+          example: 401
+      required: [success, message]
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ==================== AUTH ENDPOINTS ====================
+  /api/v2/auth/register:
+    post:
+      summary: Register new user
+      description: Create a new user account with email verification
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePassword123!
+      responses:
+        201:
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/User'
+                  message:
+                    type: string
+        400:
+          description: Bad request - validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v2/auth/login:
+    post:
+      summary: Login user
+      description: Authenticate user and return JWT token
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                password:
+                  type: string
+                  format: password
+      responses:
+        200:
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  token:
+                    type: string
+                    description: JWT token
+                  data:
+                    $ref: '#/components/schemas/User'
+        401:
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v2/auth/me:
+    get:
+      summary: Get current user
+      description: Retrieve authenticated user profile
+      tags: [Auth]
+      responses:
+        200:
+          description: Current user data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/User'
+        401:
+          description: Unauthorized - no token provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v2/auth/logout:
+    get:
+      summary: Logout user
+      description: Clear user session (frontend should remove token)
+      tags: [Auth]
+      responses:
+        200:
+          description: User logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v2/auth/verifyemail/{token}:
+    get:
+      summary: Verify email address
+      description: Verify user email using token sent via email
+      tags: [Auth]
+      security: []
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+          description: Email verification token
+      responses:
+        200:
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        400:
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v2/auth/forgotpassword:
+    post:
+      summary: Request password reset
+      description: Send password reset email to user
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+      responses:
+        200:
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: Password reset email sent
+        404:
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v2/auth/resetpassword/{token}:
+    get:
+      summary: Validate reset token
+      description: Check if password reset token is valid
+      tags: [Auth]
+      security: []
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+          description: Password reset token
+      responses:
+        200:
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        400:
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Reset password
+      description: Reset password using valid token
+      tags: [Auth]
+      security: []
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+          description: Password reset token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+                  format: password
+                  description: New password
+                  example: NewSecurePassword123!
+      responses:
+        200:
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        400:
+          description: Invalid token or weak password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== PRODUCT ENDPOINTS ====================
+  /api/products:
+    get:
+      summary: Get all products
+      description: Retrieve all products with optional filtering
+      tags: [Products]
+      security: []
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Filter by product category
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Items per page
+      responses:
+        200:
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+
+    post:
+      summary: Create product
+      description: Create new product (Admin only)
+      tags: [Products]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, price, stock]
+              properties:
+                name:
+                  type: string
+                  example: Wireless Headphones
+                description:
+                  type: string
+                price:
+                  type: number
+                  format: float
+                  example: 99.99
+                category:
+                  type: string
+                  example: Electronics
+                stock:
+                  type: integer
+                  example: 50
+                imageUrl:
+                  type: string
+                  format: uri
+      responses:
+        201:
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Product'
+        403:
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/products/{id}:
+    get:
+      summary: Get single product
+      tags: [Products]
+      security: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Product ID
+      responses:
+        200:
+          description: Product details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Product'
+        404:
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Update product
+      description: Update product details (Admin only)
+      tags: [Products]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: number
+                category:
+                  type: string
+                stock:
+                  type: integer
+                imageUrl:
+                  type: string
+      responses:
+        200:
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Product'
+        403:
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete product
+      description: Delete product by ID (Admin only)
+      tags: [Products]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Product deleted successfully
+        403:
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== CART ENDPOINTS ====================
+  /api/cart:
+    get:
+      summary: Get user cart
+      description: Retrieve current user's shopping cart
+      tags: [Cart]
+      responses:
+        200:
+          description: User cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Cart'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Add item to cart
+      description: Add product to user's shopping cart
+      tags: [Cart]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId, quantity]
+              properties:
+                productId:
+                  type: string
+                  description: Product MongoDB ObjectId
+                quantity:
+                  type: integer
+                  minimum: 1
+                  example: 2
+      responses:
+        200:
+          description: Item added to cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Cart'
+        400:
+          description: Invalid product or insufficient stock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/cart/{itemId}:
+    put:
+      summary: Update cart item quantity
+      tags: [Cart]
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+          description: Cart item ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quantity]
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  example: 3
+      responses:
+        200:
+          description: Cart updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Cart'
+
+    delete:
+      summary: Remove item from cart
+      tags: [Cart]
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+          description: Cart item ID
+      responses:
+        200:
+          description: Item removed from cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # ==================== ORDER ENDPOINTS ====================
+  /api/orders:
+    get:
+      summary: Get user's orders
+      description: Retrieve all orders for the current user
+      tags: [Orders]
+      responses:
+        200:
+          description: List of user orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+
+    post:
+      summary: Create order
+      description: Create order from user's cart
+      tags: [Orders]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shippingAddress]
+              properties:
+                shippingAddress:
+                  type: object
+                  required: [line1, city, postal_code, country]
+                  properties:
+                    line1:
+                      type: string
+                      example: 123 Main St
+                    city:
+                      type: string
+                      example: New York
+                    postal_code:
+                      type: string
+                      example: "10001"
+                    country:
+                      type: string
+                      example: USA
+      responses:
+        201:
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Order'
+        400:
+          description: Cart is empty or invalid address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/orders/{id}:
+    get:
+      summary: Get single order
+      description: Retrieve order details (owner or admin)
+      tags: [Orders]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Order ID
+      responses:
+        200:
+          description: Order details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Order'
+        403:
+          description: Not authorized to view this order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/orders:
+    get:
+      summary: Get all orders
+      description: Retrieve all orders in system (Admin only)
+      tags: [Admin - Orders]
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, paid, shipped, cancelled]
+          description: Filter by order status
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: List of all orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+        403:
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/orders/analytics/summary:
+    get:
+      summary: Get order analytics
+      description: Retrieve order statistics and revenue (Admin only)
+      tags: [Admin - Orders]
+      responses:
+        200:
+          description: Order analytics summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      totalOrders:
+                        type: integer
+                        example: 150
+                      totalRevenue:
+                        type: number
+                        format: float
+                        example: 15000.50
+                      ordersByStatus:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                            count:
+                              type: integer
+        403:
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/orders/{id}/status:
+    put:
+      summary: Update order status
+      description: Update order status (Admin only)
+      tags: [Admin - Orders]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Order ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [pending, paid, shipped, cancelled]
+                  example: shipped
+      responses:
+        200:
+          description: Order status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Order'
+        400:
+          description: Invalid status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        403:
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/orders/{id}:
+    delete:
+      summary: Delete order
+      description: Delete order from system (Admin only)
+      tags: [Admin - Orders]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Order ID
+      responses:
+        200:
+          description: Order deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        403:
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== PAYMENT ENDPOINTS ====================
+  /api/payments/create-payment-intent:
+    post:
+      summary: Create payment intent
+      description: Create Stripe payment intent for order payment
+      tags: [Payments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId]
+              properties:
+                orderId:
+                  type: string
+                  description: Order MongoDB ObjectId
+      responses:
+        200:
+          description: Payment intent created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntent'
+        400:
+          description: Invalid order or order already paid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/payments/setup-intent:
+    post:
+      summary: Create setup intent
+      description: Create Stripe setup intent for saving card
+      tags: [Payments]
+      responses:
+        200:
+          description: Setup intent created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetupIntent'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+webhooks:
+  stripeWebhook:
+    post:
+      summary: Stripe webhook handler
+      description: Handle Stripe webhook events for payment status updates
+      tags: [Webhooks]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Stripe event ID
+                type:
+                  type: string
+                  enum: [payment_intent.succeeded, payment_intent.payment_failed, payment_intent.canceled]
+                  description: Webhook event type
+                data:
+                  type: object
+                  properties:
+                    object:
+                      type: object
+                      description: The Stripe payment intent object
+      responses:
+        200:
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+                    example: true
+        400:
+          description: Invalid webhook signature or payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

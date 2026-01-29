@@ -7,6 +7,12 @@ const connectDB = require('./config/db.js');
 const errorHandler = require('./middleware/error.js');
 const { globalLimiter, authLimiter, webhookLimiter } = require('./middleware/rateLimiter.js');
 const { preventNoSQLInjection, preventXSS } = require('./middleware/sanitize.js');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
+const path = require('path');
+
+// Load Swagger Document
+const swaggerDocument = YAML.load(path.join(__dirname, 'config/swagger.yaml'));
 
 // Load env vars
 dotenv.config();
@@ -79,6 +85,9 @@ app.use('/api/orders', orders);
 
 // Mount payment routes
 app.use('/api/payments', paymentRoutes);
+
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Error Handler
 app.use(errorHandler);
