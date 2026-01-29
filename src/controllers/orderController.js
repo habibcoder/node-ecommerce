@@ -98,3 +98,29 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
         data: order
     });
 });
+
+// @desc      Get all orders (Admin)
+// @route     GET /api/orders/all
+// @access    Private (Admin)
+exports.getAllOrders = asyncHandler(async (req, res, next) => {
+    const orders = await Order.find().populate('user', 'name email').sort({ createdAt: -1 });
+
+    res.status(200).json({
+        success: true,
+        count: orders.length,
+        data: orders,
+    });
+});
+
+// @desc      Get all orders of a user (Admin)
+// @route     GET /api/orders/user/:userId
+// @access    Private (Admin)
+exports.getUserOrdersAdmin = asyncHandler(async (req, res, next) => {
+    const orders = await Order.find({ user: req.params.userId }).populate('user', 'name email').sort({ createdAt: -1 });
+
+    res.status(200).json({
+        success: true,
+        count: orders.length,
+        data: orders,
+    });
+});
