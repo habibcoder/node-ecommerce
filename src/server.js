@@ -17,9 +17,6 @@ const swaggerDocument = YAML.load(path.join(__dirname, 'config/swagger.yaml'));
 // Load env vars
 dotenv.config();
 
-// Connect to database
-connectDB();
-
 const app = express();
 
 // Trust proxy - configured for security
@@ -94,15 +91,27 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(
-    `Server running in ${process.env.NODE_ENV || 'unknown'} mode on port ${PORT}`
-  );
+let server;
+
+// Connect to database and start server
+connectDB().then(() => {
+    server = app.listen(PORT, '0.0.0.0', () => {
+        console.log(
+            `Server running in ${process.env.NODE_ENV || 'unknown'} mode on port ${PORT}`
+        );
+    });
+}).catch((err) => {
+    console.error(`Database connection failed: ${err.message}`);
+    process.exit(1);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
     console.log(`Error: ${err.message}`);
     // Close server & exit process
-    server.close(() => process.exit(1));
+    if (server) {
+        server.close(() => process.exit(1));
+    } else {
+        process.exit(1);
+    }
 });
