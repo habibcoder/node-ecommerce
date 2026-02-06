@@ -21,10 +21,10 @@ exports.globalLimiter = rateLimit({
     }
 });
 
-// Auth Limiter - 5 requests per 5 minutes
+// Auth Limiter - 15 requests per 5 minutes
 exports.authLimiter = rateLimit({
     windowMs: 5 * 60 * 1000,
-    max: 5,
+    max: 15,
     message: {
         success: false,
         error: 'Too many login/register attempts, please try again after 5 minutes'
