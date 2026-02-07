@@ -58,9 +58,15 @@ exports.register = asyncHandler(async (req, res, next) => {
             });
         } catch (emailError) {
             console.log(emailError);
-            user.verificationToken = undefined;
-            user.verificationTokenExpire = undefined;
-            await user.save({ validateBeforeSave: false });
+
+            // Clean up user and Stripe customer when email fails
+            try {
+                await User.findByIdAndDelete(user._id);
+                await stripe.customers.del(customer.id);
+                console.log(`Cleaned up user ${user._id} and Stripe customer ${customer.id} after email failure`);
+            } catch (cleanupError) {
+                console.error('Failed to cleanup after email error:', cleanupError.message);
+            }
 
             return next({
                 statusCode: 500,
