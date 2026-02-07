@@ -64,7 +64,7 @@ exports.register = asyncHandler(async (req, res, next) => {
 
             return next({
                 statusCode: 500,
-                message: 'Email could not be sent'
+                message: `Email could not be sent: ${emailError.message}`
             });
         }
     } catch (error) {
@@ -77,7 +77,7 @@ exports.register = asyncHandler(async (req, res, next) => {
                 console.error(`Failed to cleanup Stripe customer ${customer.id}:`, cleanupError.message);
             }
         }
-        
+
         // Re-throw the original error
         throw error;
     }
@@ -199,7 +199,7 @@ exports.forgotPassword = asyncHandler(async (req, res, next) => {
 
         return next({
             statusCode: 500,
-            message: 'Email could not be sent'
+            message: `Email could not be sent: ${err.message}`
         });
     }
 });
