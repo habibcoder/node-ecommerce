@@ -11,7 +11,7 @@ info:
 servers:
   - url: http://localhost:5000
     description: Development Server
-  - url: https://api.example.com
+  - url: https://node-ecommerce-rwty.onrender.com
     description: Production Server
 
 components:
