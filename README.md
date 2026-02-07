@@ -29,7 +29,8 @@ A e-commerce backend API with Stripe payment integration, RBAC authentication, p
 
    ```env
    PORT=5000
-   MONGO_URI=mongodb://localhost:27017/ecommerce
+   MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/ecommerce?retryWrites=true&w=majority
+   # OR for local: mongodb://localhost:27017/ecommerce
    JWT_SECRET=your_jwt_secret_key_here
    JWT_EXPIRE=30d
    JWT_EXPIRE_DAYS=30
@@ -59,13 +60,13 @@ A e-commerce backend API with Stripe payment integration, RBAC authentication, p
 
 ### Auth
 - `POST /api/v2/auth/register` - Register a new user
-- `GET /api/v2/auth/verifyemail` - Verify email
+- `GET /api/v2/auth/verifyemail/:token` - Verify email
 - `POST /api/v2/auth/login` - Login
 - `GET /api/v2/auth/me` - Get current user profile
 - `GET /api/v2/auth/logout` - Logout user (Clear cookie)
 - `POST /api/v2/auth/forgotpassword` - Forgot password
-- `GET /api/v2/auth/resetpassword` - Reset password
-- `PUT /api/v2/auth/resetpassword` - Reset password with new password
+- `GET /api/v2/auth/resetpassword/:token` - Reset password
+- `PUT /api/v2/auth/resetpassword/:token` - Reset password with new password
 
 ### Products
 - `GET /api/products` - Get all products
@@ -84,9 +85,13 @@ A e-commerce backend API with Stripe payment integration, RBAC authentication, p
 - `POST /api/orders` - Create order from cart
 - `GET /api/orders` - Get user orders
 - `GET /api/orders/:id` - Get order details
+- `GET /api/orders/all` - Get all orders (Admin)
+- `GET /api/orders/user/:userId` - Get orders by user (Admin)
+- `PUT /api/orders/:id/status` - Update order status (Admin)
 
 ### Payments
 - `POST /api/payments/create-payment-intent` - Create Stripe Payment Intent for an order
+- `POST /api/payments/setup-intent` - Create Stripe Setup Intent
 
 ## Testing Webhooks Locally
 
@@ -94,3 +99,11 @@ A e-commerce backend API with Stripe payment integration, RBAC authentication, p
 2. Login: `stripe login`
 3. Listen: `stripe listen --forward-to localhost:5000/api/payments/webhook`
 4. Copy the Webhook Signing Secret (`whsec_...`) printed in the terminal to your `.env` file.
+
+## Troubleshooting
+
+### MongoDB Connection Issues
+If you see `MongooseError: Operation buffering timed out` or connection failures:
+1. **Check IP Whitelist**: If using MongoDB Atlas, ensure your current IP address is whitelisted in the "Network Access" tab.
+2. **Check Connection String**: Ensure your `MONGO_URI` is correct and includes the password.
+3. **Firewall/Network**: Some corporate networks or ISPs block port 27017. Try using a VPN or mobile hotspot if the connection fails despite whitelisting.
