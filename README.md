@@ -2,6 +2,8 @@
 
 A e-commerce backend API with Stripe payment integration, RBAC authentication, product management, cart feature implemented and order management.
 
+> **API Documentation (Swagger UI)**: [https://node-ecommerce-rwty.onrender.com/api-docs/](https://node-ecommerce-rwty.onrender.com/api-docs/)
+
 ## Features
 
 - **Authentication**: JWT & Cookie based auth with Role-Based Access Control (User/Admin).
