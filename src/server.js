@@ -72,6 +72,10 @@ app.post(
 // Body parser
 app.use(express.json());
 
+app.get('/', (req, res) => {
+    res.redirect('/api-docs');
+});
+
 // Mount routers
 app.use('/api/v1/auth', authLimiter, authV1);
 app.use('/api/v2/auth', authLimiter, authV2);
