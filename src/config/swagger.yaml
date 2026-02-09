@@ -1,7 +1,10 @@
 openapi: 3.1.0
 info:
-  title: E-Commerce REST API Platform
-  description: Backend e-commerce API with Stripe payment integration, JWT authentication, and admin dashboard
+  title: E-Commerce Backend REST API
+  description: >
+    A scalable backend REST API for e-commerce applications,
+    providing JWT-based authentication, Stripe payment integration,
+    and role-based access control for administrative endpoints.
   version: 1.0.0
   contact:
     name: Habib
@@ -10,9 +13,12 @@ info:
 
 servers:
   - url: http://localhost:5000
-    description: Development Server
-  - url: https://node-ecommerce-rwty.onrender.com
-    description: Production Server
+    description: Development server
+  - url: https://slim-kathrine-habibur-3ecf2cae.koyeb.app
+    description: Production server
+license:
+  name: MIT
+  url: https://opensource.org/licenses/MIT
 
 components:
   securitySchemes:
