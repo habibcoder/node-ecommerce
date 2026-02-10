@@ -2,7 +2,7 @@
 
 A e-commerce backend API with Stripe payment integration, RBAC authentication, product management, cart feature implemented and order management.
 
-> **API Documentation (Swagger UI)**: [https://slim-kathrine-habibur-3ecf2cae.koyeb.app/](https://slim-kathrine-habibur-3ecf2cae.koyeb.app/)
+> **API Documentation (Swagger UI)**: [https://www.habib.iam.bd](https://www.habib.iam.bd)
 
 ## Features
 

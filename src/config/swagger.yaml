@@ -14,7 +14,7 @@ info:
 servers:
   - url: http://localhost:5000
     description: Development server
-  - url: https://slim-kathrine-habibur-3ecf2cae.koyeb.app
+  - url: https://www.habib.iam.bd
     description: Production server
 license:
   name: MIT
