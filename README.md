@@ -17,6 +17,11 @@ A e-commerce backend API with Stripe payment integration, RBAC authentication, p
   - Stripe Payment Intents.
   - Webhook handling for asynchronous payment confirmation.
   - Secure customer integration.
+- **Email Service**: 
+  - Free Brevo email API (Render blocks SMTP).
+  - Email verification for new users.
+  - Password reset emails.
+  - Works perfectly on Render.
 - **Security**: Helmet, CORS, Data Sanitization.
 
 ## Setup
@@ -40,14 +45,18 @@ A e-commerce backend API with Stripe payment integration, RBAC authentication, p
    STRIPE_WEBHOOK_SECRET=whsec_...
    NODE_ENV=development
 
-   SMTP_HOST=smtp.example.com
-   SMTP_PORT=587
-   SMTP_USER=your-smtp-user
-   SMTP_PASS=your-smtp-password
+   BREVO_API_KEY=xkeysib_YOUR_API_KEY_HERE
    FROM_NAME=Your App Name
-   FROM_EMAIL=your-email@example.com
+   FROM_EMAIL=your-verified-email@gmail.com
    ```
    > **Note**: To get the `STRIPE_WEBHOOK_SECRET`, you need to set up a webhook endpoint in Stripe Dashboard pointing to `your-domain/api/payments/webhook` or use the Stripe CLI for local testing.
+
+   **Email Service (Brevo)**:
+   > 1. Sign up at [https://www.brevo.com](https://www.brevo.com) (completely free, no credit card needed)
+   > 2. Get your API Key v3 from: **Settings → API keys & MCP**
+   > 3. Verify your sender email in Brevo: **Senders → Add a Sender**
+   > 4. Use that email as `FROM_EMAIL` in `.env`
+   > 5. Free plan includes 300 emails/day (perfect for personal projects)
 
 3. **Run Server**
    ```bash
