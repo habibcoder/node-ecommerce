@@ -1,38 +1,56 @@
-const nodemailer = require('nodemailer');
+/**
+ * Send email using Brevo API (formerly Sendinblue)
+ * Free plan: 300 emails/day, no credit card required
+ * Works with Render (no SMTP port blocking)
+ */
+
+const axios = require('axios');
 
 const sendEmail = async (options) => {
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
-        console.log('Mock Email Check (SMTP not configured):');
+    // Check if email service is configured
+    if (!process.env.BREVO_API_KEY) {
+        console.log('📧 Mock Email (Brevo not configured):');
         console.log(`To: ${options.email}`);
         console.log(`Subject: ${options.subject}`);
         console.log(`Message: ${options.message}`);
         return;
     }
 
-    // Create transporter
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT,
-        secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-        family: 4 // Force IPv4 (This solves most timeout issues on cloud)
-    });
+    try {
+        // Brevo API endpoint for sending emails
+        const response = await axios.post(
+            'https://api.brevo.com/v3/smtp/email',
+            {
+                sender: {
+                    name: process.env.FROM_NAME || 'Ecommerce API',
+                    email: process.env.FROM_EMAIL || 'noreply@ecommerce.com'
+                },
+                to: [
+                    {
+                        email: options.email,
+                        name: options.name || 'User'
+                    }
+                ],
+                subject: options.subject,
+                htmlContent: options.message, // Brevo supports HTML content
+                textContent: options.message.replace(/<[^>]*>/g, '') // Strip HTML for plain text
+            },
+            {
+                headers: {
+                    'api-key': process.env.BREVO_API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
 
-    // Define email options
-    const message = {
-        from: `${process.env.FROM_NAME} <${process.env.FROM_EMAIL}>`,
-        to: options.email,
-        subject: options.subject,
-        text: options.message,
-    };
+        console.log(`✅ Email sent successfully to ${options.email}`);
+        console.log(`Message ID: ${response.data.messageId}`);
+        return response.data;
 
-    // Send email
-    const info = await transporter.sendMail(message);
-
-    console.log('Message sent: %s', info.messageId);
+    } catch (error) {
+        console.error('❌ Email sending error:', error.response?.data || error.message);
+        throw new Error(`Failed to send email: ${error.message}`);
+    }
 };
 
 module.exports = sendEmail;
