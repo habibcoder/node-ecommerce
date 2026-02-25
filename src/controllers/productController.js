@@ -5,11 +5,32 @@ const asyncHandler = require('../middleware/async.js');
 // @route     GET /api/products
 // @access    Public
 exports.getProducts = asyncHandler(async (req, res) => {
-    const products = await Product.find();
+    const { category, page = 1, limit = 0 } = req.query;
+
+    const filter = {};
+    if (category) {
+        // case-insensitive partial match on category
+        filter.category = { $regex: category, $options: 'i' };
+    }
+
+    const perPage = parseInt(limit, 10) || 0;
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+
+    let query = Product.find(filter);
+
+    if (perPage > 0) {
+        query = query.skip((pageNum - 1) * perPage).limit(perPage);
+    }
+
+    const products = await query;
+    const total = await Product.countDocuments(filter);
 
     res.status(200).json({
         success: true,
         count: products.length,
+        total,
+        page: perPage > 0 ? pageNum : undefined,
+        perPage: perPage > 0 ? perPage : undefined,
         data: products,
     });
 });
