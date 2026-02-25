@@ -378,12 +378,25 @@ paths:
 
   /api/v2/auth/me:
     get:
-      summary: Get current user [Private Route]
-      description: Retrieve authenticated user profile
+      summary: Get authenticated user profile [Private Route]
+      description: |
+        Retrieve the profile information of the currently authenticated user.
+        This endpoint requires a valid JWT token in the Authorization header.
+        The response includes user details excluding sensitive information (stripeCustomerId and passwordChangedAt).
       tags: [Auth]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          description: JWT token in Bearer format
       responses:
         200:
-          description: Current user data
+          description: Successfully retrieved authenticated user profile
           content:
             application/json:
               schema:
@@ -391,14 +404,38 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   data:
                     $ref: '#/components/schemas/User'
         401:
-          description: Unauthorized - no token provided
+          description: Unauthorized - Invalid, expired, or missing JWT token
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingToken:
+                  summary: No token provided
+                  value:
+                    success: false
+                    message: Unauthorized access
+                    statusCode: 401
+                invalidToken:
+                  summary: Invalid or expired token
+                  value:
+                    success: false
+                    message: Not authorized to access this route
+                    statusCode: 401
+        404:
+          description: User not found - User exists in token but not in database
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: User not found
+                statusCode: 404
 
   /api/v2/auth/logout:
     get:
