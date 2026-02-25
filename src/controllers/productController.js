@@ -89,6 +89,17 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
         });
     }
 
+    // If client is updating the product name, ensure it's not taken by another product
+    if (req.body && req.body.name) {
+        const existing = await Product.findOne({ name: req.body.name.trim() });
+        if (existing && existing._id.toString() !== req.params.id) {
+            return next({
+                statusCode: 400,
+                message: `The name '${req.body.name}' is already taken. Please choose a different name.`
+            });
+        }
+    }
+
     product = await Product.findByIdAndUpdate(req.params.id, req.body, {
         new: true,
         runValidators: true,
