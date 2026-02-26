@@ -23,7 +23,7 @@ router
 router
     .route('/:id')
     .get(validateProductId, getProduct)
-    .put(protect, authorize('admin'), validateUpdateProduct, updateProduct)
+    .patch(protect, authorize('admin'), validateUpdateProduct, updateProduct)
     .delete(protect, authorize('admin'), validateProductId, deleteProduct);
 
 module.exports = router;

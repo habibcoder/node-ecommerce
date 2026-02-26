@@ -17,7 +17,7 @@ router.route('/')
     .post(validateAddToCart, addItemToCart);
 
 router.route('/:itemId')
-    .put(validateUpdateCartItem, updateCartItem)
+    .patch(validateUpdateCartItem, updateCartItem)
     .delete(validateRemoveFromCart, removeItemFromCart);
 
 module.exports = router;

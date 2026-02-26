@@ -77,7 +77,7 @@ exports.createProduct = asyncHandler(async (req, res, next) => {
 });
 
 // @desc      Update product
-// @route     PUT /api/products/:id
+// @route     PATCH /api/products/:id
 // @access    Private (Admin)
 exports.updateProduct = asyncHandler(async (req, res, next) => {
     let product = await Product.findById(req.params.id);

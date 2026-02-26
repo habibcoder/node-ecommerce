@@ -226,7 +226,7 @@ exports.addItemToCart = asyncHandler(async (req, res, next) => {
 });
 
 // @desc      Update item quantity in cart
-// @route     PUT /api/cart/:itemId
+// @route     PATCH /api/cart/:itemId
 // @access    Private
 exports.updateCartItem = asyncHandler(async (req, res, next) => {
     const { quantity } = req.body;

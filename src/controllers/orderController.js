@@ -79,7 +79,7 @@ exports.getOrder = asyncHandler(async (req, res, next) => {
 });
 
 // @desc      Update order status
-// @route     PUT /api/orders/:id/status
+// @route     PATCH /api/orders/:id/status
 // @access    Private (Admin)
 exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     const { status } = req.body;

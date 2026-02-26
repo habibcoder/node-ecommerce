@@ -32,6 +32,6 @@ router.route('/:id')
     .get(validateOrderId, getOrder);
 
 router.route('/:id/status')
-    .put(authorize('admin'), validateUpdateOrderStatus, updateOrderStatus);
+    .patch(authorize('admin'), validateUpdateOrderStatus, updateOrderStatus);
 
 module.exports = router;

@@ -83,13 +83,13 @@ A e-commerce backend API with Stripe payment integration, RBAC authentication, p
 - `GET /api/products` - Get all products
 - `GET /api/products/:id` - Get single product
 - `POST /api/products` - Create product (Admin)
-- `PUT /api/products/:id` - Update product (Admin)
+- `PATCH /api/products/:id` - Update product (Admin)
 - `DELETE /api/products/:id` - Delete product (Admin)
 
 ### Cart
 - `GET /api/cart` - Get user cart
 - `POST /api/cart` - Add item to cart
-- `PUT /api/cart/:itemId` - Update quantity of existing cart items
+- `PATCH /api/cart/:itemId` - Update quantity of existing cart items
 - `DELETE /api/cart/:itemId` - Remove item from cart
 
 ### Orders
@@ -98,7 +98,7 @@ A e-commerce backend API with Stripe payment integration, RBAC authentication, p
 - `GET /api/orders/:id` - Get order details
 - `GET /api/orders/all` - Get all orders (Admin)
 - `GET /api/orders/user/:userId` - Get orders by user (Admin)
-- `PUT /api/orders/:id/status` - Update order status (Admin)
+- `PATCH /api/orders/:id/status` - Update order status (Admin)
 
 ### Payments
 - `POST /api/payments/create-payment-intent` - Create Stripe Payment Intent for an order

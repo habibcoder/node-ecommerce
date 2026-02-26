@@ -688,9 +688,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-    put:
+    patch:
       summary: Update product [Admin Only]
-      description: Update product details (Admin only)
+      description: |
+        Update product details (Admin only).
+
+        Example (curl):
+        ```bash
+        curl -X PATCH 'http://localhost:5000/api/products/{id}' \
+          -H 'Authorization: Bearer <YOUR_JWT>' \
+          -H 'Content-Type: application/json' \
+          -d '{"price":149.99,"stock":8}'
+        ```
       tags: [Products]
       security:
         - bearerAuth: []
@@ -840,8 +849,18 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/cart/{itemId}:
-    put:
+    patch:
       summary: Update cart item quantity [Private Route]
+      description: |
+        Update the quantity for a single cart item.
+
+        Example (curl):
+        ```bash
+        curl -X PATCH 'http://localhost:5000/api/cart/{itemId}' \
+          -H 'Authorization: Bearer <YOUR_JWT>' \
+          -H 'Content-Type: application/json' \
+          -d '{"quantity":3}'
+        ```
       tags: [Cart]
       security:
         - bearerAuth: []
@@ -1076,9 +1095,18 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/orders/{id}/status:
-    put:
+    patch:
       summary: Update order status [Admin Only]
-      description: Update the status of an order
+      description: |
+        Update the status of an order (Admin only).
+
+        Example (curl):
+        ```bash
+        curl -X PATCH 'http://localhost:5000/api/orders/{id}/status' \
+          -H 'Authorization: Bearer <YOUR_JWT>' \
+          -H 'Content-Type: application/json' \
+          -d '{"status":"shipped"}'
+        ```
       tags: [Orders]
       security:
         - bearerAuth: []
