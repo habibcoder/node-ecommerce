@@ -43,25 +43,22 @@ exports.register = asyncHandler(async (req, res, next) => {
         // Create verification URL
         const verifyUrl = `${req.protocol}://${req.get('host')}/api/v2/auth/verifyemail/${verificationToken}`;
 
-        // const message = `You are receiving this email because you (or someone else) has requested the creation of an account.\nPlease click on the below link to verify your email:\n\n${verifyUrl}`;
-
         const message = `
         Hello,
 
         Thank you for registering an account with us.
 
-        To complete your registration, please verify your email address by clicking the link below:
+        Please verify your email to complete your registration by clicking the link below:
 
         ${verifyUrl}
 
-        If you did not initiate this request, please disregard this email. No further action is required.
+        If you did not request this, you can safely ignore this message — no further action is required.
 
-        If you need assistance, please contact our support team.
+        If you need help, reply to this email or contact our support team.
 
         Best regards,
         Support Team
         `;
-
 
         try {
             await sendEmail({
@@ -204,23 +201,19 @@ exports.forgotPassword = asyncHandler(async (req, res, next) => {
     // Create reset url
     const resetUrl = `${req.protocol}://${req.get('host')}/api/v2/auth/resetpassword/${resetToken}`;
 
-    // const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to:\n\n${resetUrl}`;
-
     const message = `
     Hello,
 
-    You are receiving this email because a request was made to reset the password for your account.
+    We received a request to reset the password for your account.
 
-    To complete the password reset, please make a PUT request to the following URL:
+    To reset your password, open the link below and follow the instructions:
 
     ${resetUrl}
 
-    If you did not request a password reset, please ignore this message. No further action is required.
+    This link will expire shortly for your security. If you did not request a password reset, please ignore this message or contact support.
 
-    Best regards,
-    Support Team
+    Best regards, Support Team 
     `;
-
 
     try {
         await sendEmail({
