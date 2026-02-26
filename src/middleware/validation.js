@@ -288,10 +288,10 @@ const validateCreateOrder = [
         .trim()
         .notEmpty()
         .withMessage('Country is required')
-        .isLength({ min: 2, max: 2 })
-        .withMessage('Country must be a 2-letter country code')
-        .matches(/^[A-Z]{2}$/)
-        .withMessage('Country must be a valid 2-letter uppercase country code'),
+        .isLength({ min: 2, max: 3 })
+        .withMessage('Country must be a 2- or 3-letter country code')
+        .matches(/^[A-Z]{2,3}$/)
+        .withMessage('Country must be a valid 2- or 3-letter uppercase country code'),
     
     body('shippingAddress.line2')
         .optional()

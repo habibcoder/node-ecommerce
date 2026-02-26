@@ -180,7 +180,9 @@ components:
               example: "10001"
             country:
               type: string
+              description: 2- or 3-letter ISO country code (uppercase)
               example: USA
+              pattern: '^[A-Z]{2,3}$'
           required: [line1, city, postal_code, country]
         createdAt:
           type: string
