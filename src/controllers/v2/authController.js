@@ -261,7 +261,7 @@ exports.validateResetToken = asyncHandler(async (req, res, next) => {
 
     res.status(200).json({
         success: true,
-        data: 'Token is valid. Please send a PUT request to this URL with your new password.'
+        data: 'Token is valid. Submit your new password to this URL with a PUT request containing'
     });
 });
 
