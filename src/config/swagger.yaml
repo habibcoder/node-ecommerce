@@ -83,7 +83,7 @@ components:
         createdAt:
           type: string
           format: date-time
-      required: [id, name, price, stock]
+      required: [id, name, description, price, category, stock]
 
     # Cart Item Schema
     CartItem:
@@ -124,10 +124,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CartItem'
-        totalAmount:
+        cartTotal:
           type: number
           format: float
           example: 199.98
+        totalItems:
+          type: integer
+          example: 2
+        itemsCount:
+          type: integer
+          example: 1
+        updatedAt:
+          type: string
+          format: date-time
         createdAt:
           type: string
           format: date-time
@@ -828,7 +837,20 @@ paths:
                   success:
                     type: boolean
                   data:
-                    $ref: '#/components/schemas/Cart'
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/Cart'
+                      summary:
+                        type: object
+                        properties:
+                          totalItems:
+                            type: integer
+                          cartTotal:
+                            type: number
+                            format: float
+                          itemsCount:
+                            type: integer
         401:
           description: Unauthorized
           content:
@@ -868,7 +890,33 @@ paths:
                   success:
                     type: boolean
                   data:
-                    $ref: '#/components/schemas/Cart'
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/Cart'
+                      summary:
+                        type: object
+                        properties:
+                          totalItems:
+                            type: integer
+                          cartTotal:
+                            type: number
+                            format: float
+                          itemsCount:
+                            type: integer
+                      productInfo:
+                        type: object
+                        properties:
+                          productName:
+                            type: string
+                          addedQuantity:
+                            type: integer
+                          totalInCart:
+                            type: integer
+                          availableStock:
+                            type: integer
+                          remainingStock:
+                            type: integer
         400:
           description: Invalid product or insufficient stock
           content:
@@ -928,7 +976,20 @@ paths:
                   success:
                     type: boolean
                   data:
-                    $ref: '#/components/schemas/Cart'
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/Cart'
+                      summary:
+                        type: object
+                        properties:
+                          totalItems:
+                            type: integer
+                          cartTotal:
+                            type: number
+                            format: float
+                          itemsCount:
+                            type: integer
         400:
           description: Invalid quantity or insufficient stock
           content:
@@ -960,7 +1021,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/Cart'
+                      summary:
+                        type: object
+                        properties:
+                          totalItems:
+                            type: integer
+                          cartTotal:
+                            type: number
+                            format: float
+                          itemsCount:
+                            type: integer
         404:
           description: Cart or Item not found
           content:
