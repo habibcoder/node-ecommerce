@@ -53,7 +53,25 @@ app.use(preventXSS);
 app.use(globalLimiter);
 
 // CORS
-app.use(cors());
+const allowedOrigins = [
+    'http://localhost:8080',
+    process.env.FRONTEND_URL
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 200,
+    maxAge: 600,
+    credentials: true
+}));
 
 // Dev logging middleware
 if (process.env.NODE_ENV === 'development') {
