@@ -39,6 +39,7 @@ const cart = require('./routes/cart.js');
 const orders = require('./routes/orders.js');
 const paymentController = require('./controllers/paymentController.js');
 const paymentRoutes = require('./routes/payments.js'); // Note: we will use this for non-webhook routes if we split, but currently it has both.
+const reviews = require('./routes/reviews.js');
 
 // Middleware
 
@@ -114,6 +115,7 @@ app.use('/api/v2/auth', authLimiter, authV2);
 app.use('/api/products', products);
 app.use('/api/cart', cart);
 app.use('/api/orders', orders);
+app.use('/api/reviews', reviews);
 
 // Mount payment routes
 app.use('/api/payments', paymentRoutes);

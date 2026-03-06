@@ -13,7 +13,13 @@ const {
     validateProductId 
 } = require('../middleware/validation.js');
 
+// Include other resource routers
+const reviewRouter = require('./reviews');
+
 const router = express.Router();
+
+// Re-route into other resource routers
+router.use('/:productId/reviews', reviewRouter);
 
 router
     .route('/')
