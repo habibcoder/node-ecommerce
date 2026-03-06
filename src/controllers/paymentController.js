@@ -1,6 +1,7 @@
 const stripe = require('../config/stripe.js');
 const Order = require('../models/Order.js');
 const User = require('../models/User.js');
+const Product = require('../models/Product.js');
 const asyncHandler = require('../middleware/async.js');
 
 // @desc      Create Payment Intent
@@ -114,14 +115,14 @@ exports.stripeWebhook = async (req, res) => {
             sig,
             process.env.STRIPE_WEBHOOK_SECRET
         );
-        
+
         console.log(`Webhook verified: ${event.type} (${event.id})`);
     } catch (err) {
         console.error(`Webhook signature verification failed: ${err.message}`);
-        
+
         // Log additional details for debugging (but not the actual signature for security)
         console.error(`Webhook debug info: Event type attempted: ${req.body?.type || 'unknown'}`);
-        
+
         return res.status(400).send(`Webhook signature verification failed: ${err.message}`);
     }
 
@@ -140,14 +141,14 @@ exports.stripeWebhook = async (req, res) => {
             const paymentIntent = event.data.object;
             const orderId = paymentIntent.metadata.orderId;
             const userId = paymentIntent.metadata.userId;
-            
+
             if (orderId && userId) {
                 // Verify the order exists and belongs to the user in metadata
                 const order = await Order.findById(orderId);
                 if (order && order.user.toString() === userId) {
-                    await Order.findByIdAndUpdate(orderId, { 
+                    await Order.findByIdAndUpdate(orderId, {
                         status: 'paid',
-                        paymentIntentId: paymentIntent.id 
+                        paymentIntentId: paymentIntent.id
                     });
                     console.log(`PaymentIntent succeeded: ${paymentIntent.id} for order: ${orderId}`);
                 } else {
@@ -157,35 +158,56 @@ exports.stripeWebhook = async (req, res) => {
                 console.error(`PaymentIntent ${paymentIntent.id} missing required metadata`);
             }
             break;
-            
+
         case 'payment_intent.payment_failed':
             const failedPayment = event.data.object;
             console.log(`Payment failed: ${failedPayment.id}`);
             // Optionally update order status to failed
             if (failedPayment.metadata.orderId) {
-                await Order.findByIdAndUpdate(failedPayment.metadata.orderId, { 
+                await Order.findByIdAndUpdate(failedPayment.metadata.orderId, {
                     status: 'pending' // Reset to pending for retry
                 });
             }
             break;
-            
+
         case 'payment_intent.canceled':
             const canceledPayment = event.data.object;
             const canceledOrderId = canceledPayment.metadata.orderId;
             const canceledUserId = canceledPayment.metadata.userId;
-            
+
             if (canceledOrderId && canceledUserId) {
-                // Verify the order exists and belongs to the user
-                const order = await Order.findById(canceledOrderId);
-                if (order && order.user.toString() === canceledUserId) {
-                    await Order.findByIdAndUpdate(canceledOrderId, { status: 'cancelled' });
+                // Webhook Idempotency: only process if status is changing FROM pending/paid TO cancelled
+                const order = await Order.findOneAndUpdate(
+                    {
+                        _id: canceledOrderId,
+                        user: canceledUserId,
+                        status: { $in: ['pending', 'paid'] }
+                    },
+                    { status: 'cancelled' },
+                    { new: true }
+                );
+
+                if (order) {
                     console.log(`Payment canceled: ${canceledPayment.id} for order: ${canceledOrderId}`);
+
+                    // Only restore stock if we actually changed the status
+                    if (order.items && order.items.length > 0) {
+                        const bulkOps = order.items.map(item => ({
+                            updateOne: {
+                                filter: { _id: item.product },
+                                update: { $inc: { stock: item.quantity } }
+                            }
+                        }));
+                        await Product.bulkWrite(bulkOps);
+                    }
                 } else {
-                    console.error(`Invalid cancellation attempt: Order ${canceledOrderId} not found or user mismatch`);
+                    console.log(`Payment cancellation ignored: Order ${canceledOrderId} not found, already cancelled, or user mismatch`);
                 }
+            } else {
+                console.error(`PaymentIntent ${canceledPayment.id} missing required metadata`);
             }
             break;
-            
+
         default:
             console.log(`Unhandled event type ${event.type}`);
     }

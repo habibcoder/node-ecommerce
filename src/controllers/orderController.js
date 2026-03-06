@@ -1,5 +1,6 @@
 const Order = require('../models/Order.js');
 const Cart = require('../models/Cart.js');
+const Product = require('../models/Product.js');
 const asyncHandler = require('../middleware/async.js');
 
 // @desc      Create new order
@@ -20,6 +21,33 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
 
     // Calculate total
     const totalAmount = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+    // Decrement stock atomically
+    const decrementedItems = [];
+    for (const item of cart.items) {
+        const result = await Product.updateOne(
+            { _id: item.product, stock: { $gte: item.quantity } },
+            { $inc: { stock: -item.quantity } }
+        );
+
+        if (result.modifiedCount === 0) {
+            // Rollback previously decremented items
+            if (decrementedItems.length > 0) {
+                const rollbackOps = decrementedItems.map(rolledBackItem => ({
+                    updateOne: {
+                        filter: { _id: rolledBackItem.product },
+                        update: { $inc: { stock: rolledBackItem.quantity } }
+                    }
+                }));
+                await Product.bulkWrite(rollbackOps);
+            }
+            return next({
+                statusCode: 400,
+                message: `Insufficient stock for product: ${item.name}`
+            });
+        }
+        decrementedItems.push(item);
+    }
 
     const order = await Order.create({
         user: req.user.id,
@@ -84,13 +112,36 @@ exports.getOrder = asyncHandler(async (req, res, next) => {
 exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     const { status } = req.body;
 
-    const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true, runValidators: true });
+    const order = await Order.findById(req.params.id);
 
     if (!order) {
         return next({
             statusCode: 404,
             message: 'Order not found'
         });
+    }
+
+    // Strict Option A: Hard-block uncanceling
+    if (order.status === 'cancelled' && status !== 'cancelled') {
+        return next({
+            statusCode: 400,
+            message: 'Cannot uncancel a cancelled order. Status remains cancelled.'
+        });
+    }
+
+    const isNewlyCancelled = (status === 'cancelled' && order.status !== 'cancelled');
+
+    order.status = status;
+    await order.save({ runValidators: true });
+
+    if (isNewlyCancelled && order.items && order.items.length > 0) {
+        const bulkOps = order.items.map(item => ({
+            updateOne: {
+                filter: { _id: item.product },
+                update: { $inc: { stock: item.quantity } }
+            }
+        }));
+        await Product.bulkWrite(bulkOps);
     }
 
     res.status(200).json({
