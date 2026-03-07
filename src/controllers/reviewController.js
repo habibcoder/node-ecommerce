@@ -4,7 +4,6 @@ const Order = require('../models/Order.js');
 const asyncHandler = require('../middleware/async.js');
 
 // @desc      Get reviews
-// @route     GET /api/reviews
 // @route     GET /api/products/:productId/reviews
 // @access    Public
 exports.getReviews = asyncHandler(async (req, res, next) => {
@@ -20,6 +19,38 @@ exports.getReviews = asyncHandler(async (req, res, next) => {
     }
 
     const reviews = await query;
+
+    res.status(200).json({
+        success: true,
+        count: reviews.length,
+        data: reviews
+    });
+});
+
+// @desc      Get logged in user's reviews
+// @route     GET /api/reviews/my
+// @access    Private
+exports.getMyReviews = asyncHandler(async (req, res, next) => {
+    const reviews = await Review.find({ user: req.user.id }).populate({
+        path: 'product',
+        select: 'name description'
+    });
+
+    res.status(200).json({
+        success: true,
+        count: reviews.length,
+        data: reviews
+    });
+});
+
+// @desc      Get specific user's reviews
+// @route     GET /api/reviews/user/:userId
+// @access    Private/Admin
+exports.getUserReviews = asyncHandler(async (req, res, next) => {
+    const reviews = await Review.find({ user: req.params.userId }).populate({
+        path: 'product',
+        select: 'name description'
+    });
 
     res.status(200).json({
         success: true,
@@ -67,8 +98,8 @@ exports.addReview = asyncHandler(async (req, res, next) => {
     }
 
     // Check if user has purchased the item
-    const orders = await Order.find({ 
-        user: req.user.id, 
+    const orders = await Order.find({
+        user: req.user.id,
         'items.product': req.params.productId,
         status: { $in: ['paid', 'shipped'] }
     });

@@ -4,7 +4,9 @@ const {
     getReview,
     addReview,
     updateReview,
-    deleteReview
+    deleteReview,
+    getMyReviews,
+    getUserReviews
 } = require('../controllers/reviewController.js');
 
 const {
@@ -21,6 +23,14 @@ router
     .route('/')
     .get(getReviews)
     .post(protect, validateCreateReview, addReview);
+
+router
+    .route('/my')
+    .get(protect, getMyReviews);
+
+router
+    .route('/user/:userId')
+    .get(protect, authorize('admin'), getUserReviews);
 
 router
     .route('/:id')
